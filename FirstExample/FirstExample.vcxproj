@@ -151,7 +151,6 @@
     <ClCompile Include="Cell.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="MonstersAfterPacmanState.cpp" />
-    <ClCompile Include="PacmanAfterMonstersState.cpp" />
     <ClCompile Include="State.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -160,7 +159,6 @@
     <ClInclude Include="Constants.h" />
     <ClInclude Include="GLUT.H" />
     <ClInclude Include="MonstersAfterPacmanState.h" />
-    <ClInclude Include="PacmanAfterMonstersState.h" />
     <ClInclude Include="Room.h" />
     <ClInclude Include="State.h" />
   </ItemGroup>

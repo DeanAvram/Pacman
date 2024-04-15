@@ -5,7 +5,6 @@
 #include "Cell.h"
 #include "State.h"
 #include "MonstersAfterPacmanState.h"
-#include "PacmanAfterMonstersState.h"
 #include <vector>
 #include <iostream>
 #include <queue>
@@ -710,16 +709,7 @@ void menu(int choice)
 		}
 		run = true;
 	}
-	if (choice == 2)
-	{
-		if (gameState == NULL) {
-			gameState = new MonstersAfterPacmanState();
-		}
-		else {
-			gameState=gameState->MakeTransition();
-		}
-		run = true;
-	}
+	
 }
 
 void main(int argc, char* argv[])
@@ -728,7 +718,7 @@ void main(int argc, char* argv[])
 	glutInitDisplayMode(GLUT_RGB | GLUT_DOUBLE); // double means it uses double buffer
 	glutInitWindowSize(600, 600);
 	glutInitWindowPosition(600, 100);
-	glutCreateWindow("Pacman by Assaf Ariely & Vladi Hagay");
+	glutCreateWindow("Pacman");
 
 	glutDisplayFunc(display); // refresh function
 	glutIdleFunc(idle); // runs all the time in the background
@@ -736,7 +726,6 @@ void main(int argc, char* argv[])
 	glutCreateMenu(menu);
 	glutAttachMenu(GLUT_RIGHT_BUTTON);
 	glutAddMenuEntry("Start Game", 1);
-	glutAddMenuEntry("Change State", 2);
 
 	init();
 

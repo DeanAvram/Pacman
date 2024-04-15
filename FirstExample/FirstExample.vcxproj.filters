@@ -33,9 +33,6 @@
     <ClInclude Include="State.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="PacmanAfterMonstersState.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="MonstersAfterPacmanState.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -48,9 +45,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="State.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="PacmanAfterMonstersState.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="MonstersAfterPacmanState.cpp">

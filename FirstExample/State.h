@@ -12,7 +12,6 @@ public:
 
 	bool isPacmanChasing;
 
-	virtual State* MakeTransition() = 0;
 	virtual void OnStateEnter() = 0;
 	virtual void OnStateExit() = 0;
 

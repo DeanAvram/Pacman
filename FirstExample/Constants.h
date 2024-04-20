@@ -6,5 +6,6 @@ const int PACMAN = 2;
 const int MONSTER = 3;
 const int COIN = 4;
 const int NUM_OF_ROOMS = 6;
-const int NUM_OF_MONSTERS = 2;
+const int NUM_OF_MONSTERS = 3;
 const int NUM_OF_COINS= 3;
+const int DANGER_DIST = 7;

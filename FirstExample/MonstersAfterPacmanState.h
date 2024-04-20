@@ -12,7 +12,6 @@ public:
 
 	MonstersAfterPacmanState();
 	~MonstersAfterPacmanState();
-	State* MakeTransition();
 	void OnStateEnter();
 	void OnStateExit();
 

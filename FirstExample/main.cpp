@@ -156,7 +156,7 @@ void monsterMove() {
 			if (maze[row][col] == PACMAN)
 			{
 				run = false;
-				printf(" MONSTERS WINS!!! ");
+				printf("MONSTERS WINS!!! ");
 				maze[(*ptr)->get_x()][(*ptr)->get_y()] = SPACE;
 				maze[row][col] = MONSTER;
 				return;
@@ -319,7 +319,7 @@ double DistanceForPackman(int x, int y)
 bool monsterDanger() {
 	for (int i = 0; i < monsters.size(); i++) {
 		Cell* m = monsters[i];
-		if (DistanceMaze(pacman->get_x(), pacman->get_y(), m->get_x(), m->get_y()) < 7) {
+		if (DistanceMaze(pacman->get_x(), pacman->get_y(), m->get_x(), m->get_y()) < DANGER_DIST) {
 			dangerousMonster = monsters[i];
 			return true;
 		}
@@ -332,7 +332,7 @@ void pacmanMove()
 	if (coinsRemained == 0)
 	{
 		run = false;
-		printf(" PACMAN WINS!!!");
+		printf("PACMAN WINS!!!");
 	}
 	else if (run)
 	{
@@ -346,6 +346,7 @@ void pacmanMove()
 		{
 			coinsRemained--;
 			EraseCoin(row, col);
+			printf("Pacman ate %d coins. %d left\n", (NUM_OF_COINS - coinsRemained) ,coinsRemained);
 		}
 		maze[pacman->get_x()][pacman->get_y()] = SPACE;
 		pacman->set_y_val(col);
@@ -364,43 +365,38 @@ void BFSIteration()
 	grays2.push_back(pacman);
 	Cell* pCurrent;
 	bool found_path = false;
-	// 1. check if grays is not empty
 	while (!found_path)
 	{
 		if (grays2.empty())
 		{
 			found_path = true;
-			printf(" NO SOLUTION");
+			printf("NO SOLUTION");
 		}
-		else // grays is not empty
+		else
 		{
-			// 2. extract the first element from grays and paint it BLACK
+			
 			pCurrent = *grays2.begin();
 			int row, col;
-			// 2. remove it from grays
+			// Grays is not empty. Get the first one and remove it from grays
 			grays2.erase(grays2.begin());
 
 			row = pCurrent->get_x();
 			col = pCurrent->get_y();
-			//maze[rowGray][colGray] = BLACK_START;
-			// 3 check the neighbors of pCurrent and pick the white one and add them to the end of grays
-			// UP
+			// check all the neighbors of pCurrent. Pick the white one and add them to the end of grays
 			if (run)
 			{
+				// UP
 				if (maze[row + 1][col] == SPACE || maze[row + 1][col] == COIN)
 					found_path = PacmanCheckNeighbor(pCurrent, row + 1, col);
-				if (!found_path)
-					// DOWN
-					if (maze[row - 1][col] == SPACE || maze[row - 1][col] == COIN)
-						found_path = PacmanCheckNeighbor(pCurrent, row - 1, col);
+				// DOWN
+				if (!found_path && (maze[row - 1][col] == SPACE || maze[row - 1][col] == COIN))
+					found_path = PacmanCheckNeighbor(pCurrent, row - 1, col);
 				// right
-				if (!found_path)
-					if (maze[row][col + 1] == SPACE || maze[row][col + 1] == COIN)
-						found_path = PacmanCheckNeighbor(pCurrent, row, col + 1);
+				if (!found_path && (maze[row][col + 1] == SPACE || maze[row][col + 1] == COIN))
+					found_path = PacmanCheckNeighbor(pCurrent, row, col + 1);
 				// left	
-				if (!found_path)
-					if (maze[row][col - 1] == SPACE || maze[row][col - 1] == COIN)
-						found_path = PacmanCheckNeighbor(pCurrent, row, col - 1);
+				if (!found_path && (maze[row][col - 1] == SPACE || maze[row][col - 1] == COIN))
+					found_path = PacmanCheckNeighbor(pCurrent, row, col - 1);
 			}
 		}
 	}
@@ -478,20 +474,6 @@ void EraseCoin(int x, int y)
 		}
 	}
 }
-
-//void EraseMonster(int x, int y)
-//{
-//	vector<Cell*>::iterator ptr;
-//	for (ptr = monsters.begin(); ptr < monsters.end(); ptr++)
-//	{
-//		if ((*ptr)->get_x() == x && (*ptr)->get_y()== y)
-//		{
-//			monsters.erase(ptr);
-//			return;
-//		}
-//	}
-//}
-
 
 
 void Astar(Room r1, Room r2) {
@@ -658,19 +640,20 @@ void DrawMaze()
 			switch (maze[i][j])
 			{
 			case WALL:
-				glColor3d(0.137255, 0.137255, 0.556863);// dark red
+				//glColor3d(0.137255, 0.137255, 0.556863);// DARK BLUE
+				glColor3d(0.35, 0.35, 0.35);// LIGHT GREY 
 				break;
 			case SPACE:
-				glColor3d(1, 1, 1); // white
+				glColor3d(1, 1, 1); // WHITE
 				break;
 			case PACMAN:
-				glColor3d(0, 1, 1); // white
+				glColor3d(0.7, 0.6, 0.85); // LIGHT PURPLE
 				break;
 			case MONSTER:
-				glColor3d(0, 0, 0); // white
+				glColor3d(0, 0, 0); // BLACK
 				break;
 			case COIN:
-				glColor3d(0.8, 0.498039, 0.196078);
+				glColor3d(0.8, 0.5, 0.2); // YELLOW
 				break;
 			}
 			

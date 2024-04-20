@@ -408,7 +408,7 @@ bool PacmanCheckNeighbor(Cell* pCurrent, int row, int col)
 {
 	Cell* pc = new Cell(row, col, pCurrent);
 	grays2.push_back(pc);
-	if (DistanceMaze(row, col, pacman->get_x(), pacman->get_y()) >= 8 || maze[row][col]== COIN)
+	if (DistanceMaze(row, col, pacman->get_x(), pacman->get_y()) >= MONSTER_DEPTH || maze[row][col]== COIN)
 	{
 		RestorePath();
 		return true;
@@ -416,51 +416,47 @@ bool PacmanCheckNeighbor(Cell* pCurrent, int row, int col)
 	return false;
 }
 
-
 void RestorePath()
 {
-	    vector<Cell*>::iterator tmp;
-	    Cell* pc = new Cell();
-	    Cell* p = new Cell();
-			if (!monsterDanger()) {
-				double best_distance = DBL_MAX, tmp_dis;
-				for (tmp = grays2.begin(); tmp != grays2.end(); tmp++)
-				{
-					tmp_dis = DistanceForPackman((*tmp)->get_x(), (*tmp)->get_y());
+	// Iterator for gray cells
+	vector<Cell*>::iterator tmp;
 
-					if (tmp_dis < best_distance)
-					{
-						best_distance = tmp_dis;
-						pc = *tmp;
-					}
-				}
-			}
-			else {
-				double best_distance = 0, tmp_dis;
-				for (tmp = grays2.begin(); tmp != grays2.end(); tmp++)
-				{
-					tmp_dis = DistanceMaze((*tmp)->get_x(), (*tmp)->get_y(), dangerousMonster->get_x(), dangerousMonster->get_y());
+	// Initialize a pointer for the current cell and a pointer for the parent cell
+	Cell* pc = nullptr;
+	Cell* p = nullptr;
 
-					if (tmp_dis > best_distance)
-					{
-						best_distance = tmp_dis;
-						pc = *tmp;
-					}
-				}
+	// Determine the best cell to start restoring the path
+	if (!monsterDanger()) {
+		double best_distance = DBL_MAX, tmp_dis;
+		for (tmp = grays2.begin(); tmp != grays2.end(); tmp++) {
+			tmp_dis = DistanceForPackman((*tmp)->get_x(), (*tmp)->get_y());
+
+			if (tmp_dis < best_distance) {
+				best_distance = tmp_dis;
+				pc = *tmp;
 			}
-		
-	    
+		}
+	}
+	else {
+		double best_distance = 0, tmp_dis;
+		for (tmp = grays2.begin(); tmp != grays2.end(); tmp++) {
+			tmp_dis = DistanceMaze((*tmp)->get_x(), (*tmp)->get_y(), dangerousMonster->get_x(), dangerousMonster->get_y());
+
+			if (tmp_dis > best_distance) {
+				best_distance = tmp_dis;
+				pc = *tmp;
+			}
+		}
+	}
+
+	// Start restoring the path from the selected cell
 	p = pc->get_parent();
-	while (p != nullptr)
-	{
+	while (p != nullptr) {
 		path.push_back(pc);
 		pc = pc->get_parent();
 		p = p->get_parent();
 	}
-	
 }
-
-
 
 
 void EraseCoin(int x, int y)
@@ -557,61 +553,6 @@ void RoomAstar(Room r1, Room r2) {
 }
 
 
-/*
-void RoomAstar(Room r1, Room r2) {
-	vector <Cell> grays;
-	vector <Cell> blacks;
-	Cell* pcurrent;
-	int xTarget = r2.get_cx(), yTarget = r2.get_cy();
-	Cell first = *(new Cell(r1.get_cx(), r1.get_cy(), nullptr, xTarget, yTarget, 0));
-	pq.push(first);
-	grays.push_back(first);
-	vector<Cell>::iterator it_gray;
-	bool AStar_is_running = true;
-
-	while (AStar_is_running) {
-		if (pq.empty())
-		{
-			//printf("no solution  ");
-			AStar_is_running = false;
-			return;
-		}
-		else {
-			pcurrent = new Cell(pq.top());
-			pq.pop();
-			it_gray = find(grays.begin(), grays.end(), *pcurrent);
-			if (it_gray == grays.end())
-			{
-				printf("pcurrent not found");
-				AStar_is_running = false;
-				return;
-			}
-			grays.erase(it_gray);
-			blacks.push_back(*pcurrent);
-			int r = pcurrent->get_x(), c = pcurrent->get_y();
-			if (AStar_is_running && r < MSZ) {
-				RoomCheckNeighbor(r + 1, c, pcurrent, xTarget, yTarget, grays, blacks);
-			}
-			// down
-			if (AStar_is_running && r > 0) {
-				RoomCheckNeighbor(r - 1, c, pcurrent, xTarget, yTarget, grays, blacks);
-			}
-
-			// left
-			if (AStar_is_running && c > 0) {
-				RoomCheckNeighbor(r, c - 1, pcurrent, xTarget, yTarget, grays, blacks);
-			}
-
-			// right
-			if (AStar_is_running && c < MSZ) {
-				RoomCheckNeighbor(r, c + 1, pcurrent, xTarget, yTarget, grays, blacks);
-			}
-
-
-		}
-	}
-
-}*/
 
 void RoomCheckNeighbor(int row, int col, Cell* p, int xt, int yt, vector <Cell>& grays, vector <Cell>& blacks) {
 	// Define the cost of moving to the neighboring cell
@@ -684,67 +625,6 @@ void updatePriorityQueue(Cell& cell) {
 	}
 }
 
-
-
-/*
-void RoomCheckNeighbor(int row, int col, Cell* p, int xt, int yt, vector <Cell>& grays, vector <Cell>& blacks) {
-	double cost;
-	vector<Cell>::iterator it_gray;
-	vector<Cell>::iterator it_black;
-	vector<Cell> tmp;
-	Cell* pc;
-	if (maze[row][col] == SPACE) {
-		cost = 1;
-	}
-	else {
-		cost = ROOM_ASTAR_COST;
-	}
-	if (xt == row && yt == col)
-	{
-		AStar_is_running = false;
-		while (!pq.empty()) {
-			pq.pop();
-		}
-		drawPath(p);
-		return;
-	}
-	else
-	{
-		Cell* ctmp = new Cell(row, col, p, xt, yt, p->get_g_val() + cost);
-		it_gray = find(grays.begin(), grays.end(), *ctmp);
-		it_black = find(blacks.begin(), blacks.end(), *ctmp);
-		if (it_gray == grays.end() && it_black == blacks.end())//it is white
-		{
-			pq.push(*ctmp); // add it to pq
-			grays.push_back(*ctmp); // paint it gray
-		}
-		else if (it_gray != grays.end()) // it is gray
-		{
-			if (ctmp->get_g_val() < it_gray->get_g_val()) 
-			{
-				// need to update G and F in grays and we have to update pq
-				*it_gray = *ctmp;
-
-				// update pq;
-				pc = new Cell(pq.top());
-				while (!pq.empty() && !(pc->get_x() == ctmp->get_x() && pc->get_y() == ctmp->get_y()))
-				{
-					pq.pop();
-					tmp.push_back(*pc);
-					pc = new Cell(pq.top());
-				}
-				// pq is not empty pn has been found
-				pq.pop();
-				pq.push(*ctmp); // insert to pq the better copy of the neighbor
-				while (!tmp.empty())
-				{
-					pq.push(tmp[tmp.size() - 1]);
-					tmp.pop_back();
-				}
-			}
-		}
-	}
-}*/
 
 void drawPath(Cell* tmp)
 {

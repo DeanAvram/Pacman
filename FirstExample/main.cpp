@@ -43,9 +43,9 @@ void InitRooms();
 void drawPlayers();
 bool isInvadingRoom(int r, int c, int h, int w);
 void connectRooms();
-void Astar(Room r1, Room r2);
+void RoomAstar(Room r1, Room r2);
 void drawPath(Cell* tmp);
-void CheckNeighbor(int row, int col, Cell* p, int xt, int yt, vector <Cell>& grays, vector <Cell>& blacks);
+void RoomCheckNeighbor(int row, int col, Cell* p, int xt, int yt, vector <Cell>& grays, vector <Cell>& blacks);
 void pacmanMove();
 void EraseCoin(int x, int y);
 void BFSIteration();
@@ -59,6 +59,7 @@ double DistanceForMonster(int x, int y, int i);
 bool CheckNeighborMonster(Cell* pCurrent, int x, int y, int i);
 void RestorePathMonster(int i);
 bool monsterDanger();
+void updatePriorityQueue(Cell& cell);
 
 
 
@@ -122,7 +123,7 @@ void connectRooms() {
 	for (int i = 0; i < NUM_OF_ROOMS; i++) {
 		for (int j = 0; j < NUM_OF_ROOMS; j++) {
 			if (i != j) {
-				Astar(rooms[i], rooms[j]);
+				RoomAstar(rooms[i], rooms[j]);
 			}
 		}
 		printf("room %d connected \n", i);
@@ -156,7 +157,7 @@ void monsterMove() {
 			if (maze[row][col] == PACMAN)
 			{
 				run = false;
-				printf("MONSTERS WINS!!! ");
+				printf("MONSTERS WINS!!!");
 				maze[(*ptr)->get_x()][(*ptr)->get_y()] = SPACE;
 				maze[row][col] = MONSTER;
 				return;
@@ -476,7 +477,88 @@ void EraseCoin(int x, int y)
 }
 
 
-void Astar(Room r1, Room r2) {
+void RoomAstar(Room r1, Room r2) {
+	// Initialize containers for cells being explored and explored cells
+	vector<Cell> grays;
+	vector<Cell> blacks;
+
+	// Initialize variables for target room coordinates
+	int xTarget = r2.get_cx();
+	int yTarget = r2.get_cy();
+
+	// Create the initial cell representing the starting room
+	Cell first(r1.get_cx(), r1.get_cy(), nullptr, xTarget, yTarget, 0);
+
+	// Push the initial cell into the priority queue and mark it as gray
+	pq.push(first);
+	grays.push_back(first);
+
+	// Iterator for gray cells
+	vector<Cell>::iterator it_gray;
+
+	// Flag to track whether A* algorithm is running
+	bool AStar_is_running = true;
+
+	// Main A* loop
+	while (AStar_is_running) {
+		// Check if the priority queue is empty
+		if (pq.empty()) {
+			// If the queue is empty, terminate the algorithm
+			AStar_is_running = false;
+			return;
+		}
+		else {
+			// Retrieve the current cell from the priority queue
+			Cell* pcurrent = new Cell(pq.top());
+			pq.pop();
+
+			// Find the current cell in the gray list
+			it_gray = find(grays.begin(), grays.end(), *pcurrent);
+
+			// Check if the current cell is not in the gray list
+			if (it_gray == grays.end()) {
+				// If not found in the gray list, print an error message and terminate the algorithm
+				printf("Current cell not found in gray list.\n");
+				AStar_is_running = false;
+				return;
+			}
+
+			// Remove the current cell from the gray list and add it to the black list
+			grays.erase(it_gray);
+			blacks.push_back(*pcurrent);
+
+			// Get the coordinates of the current cell
+			int r = pcurrent->get_x();
+			int c = pcurrent->get_y();
+
+			// Explore neighboring cells
+
+			// Up
+			if (AStar_is_running && r < MSZ) {
+				RoomCheckNeighbor(r + 1, c, pcurrent, xTarget, yTarget, grays, blacks);
+			}
+
+			// Down
+			if (AStar_is_running && r > 0) {
+				RoomCheckNeighbor(r - 1, c, pcurrent, xTarget, yTarget, grays, blacks);
+			}
+
+			// Left
+			if (AStar_is_running && c > 0) {
+				RoomCheckNeighbor(r, c - 1, pcurrent, xTarget, yTarget, grays, blacks);
+			}
+
+			// Right
+			if (AStar_is_running && c < MSZ) {
+				RoomCheckNeighbor(r, c + 1, pcurrent, xTarget, yTarget, grays, blacks);
+			}
+		}
+	}
+}
+
+
+/*
+void RoomAstar(Room r1, Room r2) {
 	vector <Cell> grays;
 	vector <Cell> blacks;
 	Cell* pcurrent;
@@ -508,42 +590,115 @@ void Astar(Room r1, Room r2) {
 			blacks.push_back(*pcurrent);
 			int r = pcurrent->get_x(), c = pcurrent->get_y();
 			if (AStar_is_running && r < MSZ) {
-				CheckNeighbor(r + 1, c, pcurrent, xTarget, yTarget, grays, blacks);
+				RoomCheckNeighbor(r + 1, c, pcurrent, xTarget, yTarget, grays, blacks);
 			}
 			// down
 			if (AStar_is_running && r > 0) {
-				CheckNeighbor(r - 1, c, pcurrent, xTarget, yTarget, grays, blacks);
+				RoomCheckNeighbor(r - 1, c, pcurrent, xTarget, yTarget, grays, blacks);
 			}
 
 			// left
 			if (AStar_is_running && c > 0) {
-				CheckNeighbor(r, c - 1, pcurrent, xTarget, yTarget, grays, blacks);
+				RoomCheckNeighbor(r, c - 1, pcurrent, xTarget, yTarget, grays, blacks);
 			}
 
 			// right
 			if (AStar_is_running && c < MSZ) {
-				CheckNeighbor(r, c + 1, pcurrent, xTarget, yTarget, grays, blacks);
+				RoomCheckNeighbor(r, c + 1, pcurrent, xTarget, yTarget, grays, blacks);
 			}
 
 
 		}
 	}
 
+}*/
+
+void RoomCheckNeighbor(int row, int col, Cell* p, int xt, int yt, vector <Cell>& grays, vector <Cell>& blacks) {
+	// Define the cost of moving to the neighboring cell
+	double cost;
+
+	// Check if the neighboring cell is open space or an obstacle
+	if (maze[row][col] == SPACE) {
+		// If it's open space, set the cost to 1
+		cost = 1.0;
+	}
+	else {
+		// If it's an obstacle, set the cost to a higher value
+		cost = ROOM_ASTAR_COST;
+	}
+
+	// Check if the neighboring cell is the target cell
+	if (xt == row && yt == col) {
+		// If it is, terminate the A* algorithm and draw the path
+		AStar_is_running = false;
+		while (!pq.empty()) {
+			pq.pop();
+		}
+		drawPath(p);
+		return;
+	}
+	else {
+		// If it's not the target cell, proceed with evaluating the cell
+		Cell* ctmp = new Cell(row, col, p, xt, yt, p->get_g_val() + cost);
+		vector<Cell>::iterator it_gray = find(grays.begin(), grays.end(), *ctmp);
+		vector<Cell>::iterator it_black = find(blacks.begin(), blacks.end(), *ctmp);
+
+		// Check if the neighboring cell is unexplored (not in grays or blacks)
+		if (it_gray == grays.end() && it_black == blacks.end()) {
+			// If it's unexplored, add it to the priority queue and mark it as gray
+			pq.push(*ctmp);
+			grays.push_back(*ctmp);
+		}
+		else if (it_gray != grays.end()) {
+			// If it's gray, check if the new path to it is better
+			if (ctmp->get_g_val() < it_gray->get_g_val()) {
+				// If the new path is better, update its cost and adjust the priority queue
+				*it_gray = *ctmp;
+				updatePriorityQueue(*ctmp);
+			}
+		}
+	}
 }
 
-void CheckNeighbor(int row, int col, Cell* p, int xt, int yt, vector <Cell>& grays, vector <Cell>& blacks) {
+void updatePriorityQueue(Cell& cell) {
+	// Temporary vector to hold cells from the priority queue
+	vector<Cell> tmp;
+
+	// Pop cells from the priority queue until the cell to be updated is found
+	while (!pq.empty()) {
+		Cell top_cell = pq.top();
+		pq.pop();
+		if (top_cell == cell) {
+			// Found the cell to be updated, break the loop
+			break;
+		}
+		tmp.push_back(top_cell);
+	}
+
+	// Update the priority queue with the updated cell
+	pq.push(cell);
+
+	// Re-insert cells from the temporary vector back into the priority queue
+	for (const auto& tmp_cell : tmp) {
+		pq.push(tmp_cell);
+	}
+}
+
+
+
+/*
+void RoomCheckNeighbor(int row, int col, Cell* p, int xt, int yt, vector <Cell>& grays, vector <Cell>& blacks) {
 	double cost;
 	vector<Cell>::iterator it_gray;
 	vector<Cell>::iterator it_black;
-	vector<Cell> tmp; //  we'll need it to update pq
+	vector<Cell> tmp;
 	Cell* pc;
 	if (maze[row][col] == SPACE) {
 		cost = 1;
 	}
 	else {
-		cost = 2.7;
+		cost = ROOM_ASTAR_COST;
 	}
-	// is maze[row][col] a TARGET
 	if (xt == row && yt == col)
 	{
 		AStar_is_running = false;
@@ -555,20 +710,19 @@ void CheckNeighbor(int row, int col, Cell* p, int xt, int yt, vector <Cell>& gra
 	}
 	else
 	{
-		//Cell pneighbor = *(new Cell(row, col, p, xt, yt, p->get_g_val() + cost));
 		Cell* ctmp = new Cell(row, col, p, xt, yt, p->get_g_val() + cost);
-		//pq.push(pneighbor);
 		it_gray = find(grays.begin(), grays.end(), *ctmp);
 		it_black = find(blacks.begin(), blacks.end(), *ctmp);
 		if (it_gray == grays.end() && it_black == blacks.end())//it is white
 		{
 			pq.push(*ctmp); // add it to pq
-			grays.push_back(*ctmp); // and paint it gray
+			grays.push_back(*ctmp); // paint it gray
 		}
 		else if (it_gray != grays.end()) // it is gray
 		{
-			if (ctmp->get_g_val() < it_gray->get_g_val()) // we have to update G and F in grays and we have to update pq
+			if (ctmp->get_g_val() < it_gray->get_g_val()) 
 			{
+				// need to update G and F in grays and we have to update pq
 				*it_gray = *ctmp;
 
 				// update pq;
@@ -579,7 +733,7 @@ void CheckNeighbor(int row, int col, Cell* p, int xt, int yt, vector <Cell>& gra
 					tmp.push_back(*pc);
 					pc = new Cell(pq.top());
 				}
-				// if pq is not empty pn has been found
+				// pq is not empty pn has been found
 				pq.pop();
 				pq.push(*ctmp); // insert to pq the better copy of the neighbor
 				while (!tmp.empty())
@@ -590,7 +744,7 @@ void CheckNeighbor(int row, int col, Cell* p, int xt, int yt, vector <Cell>& gra
 			}
 		}
 	}
-}
+}*/
 
 void drawPath(Cell* tmp)
 {
@@ -640,7 +794,6 @@ void DrawMaze()
 			switch (maze[i][j])
 			{
 			case WALL:
-				//glColor3d(0.137255, 0.137255, 0.556863);// DARK BLUE
 				glColor3d(0.35, 0.35, 0.35);// LIGHT GREY 
 				break;
 			case SPACE:

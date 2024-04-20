@@ -9,3 +9,4 @@ const int NUM_OF_ROOMS = 6;
 const int NUM_OF_MONSTERS = 3;
 const int NUM_OF_COINS= 3;
 const int DANGER_DIST = 7;
+const int ROOM_ASTAR_COST = 2.7;

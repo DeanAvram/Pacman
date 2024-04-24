@@ -16,6 +16,11 @@
 using std::vector;
 using std::priority_queue;
 
+const int DIR_UP = 0;
+const int DIR_DOWN = 1;
+const int DIR_RIGHT = 2;
+const int DIR_LEFT = 3;
+
 int maze[MSZ][MSZ] = { 0 };
 Room rooms[NUM_OF_ROOMS];
 vector <Cell> grays;
@@ -36,6 +41,9 @@ Cell* dangerousMonster;
 int monsterGo = 0;
 State* gameState;
 
+
+int lastPacmanDirection = -1;
+vector<int> lastMonsterDirections(NUM_OF_MONSTERS, -1); // Initialize for each monster
 
 
 void InitMaze();
@@ -73,51 +81,64 @@ void init()
 	//run = true;
 }
 
-void InitMaze()
-{
-	int i, j;
-
-	// the border is WALL by default 
-
-	for (i = 0; i < MSZ; i++)
-	{
-		for (j = 0; j < MSZ; j++)
-		{
+void InitMaze() {
+	// Initialize maze with walls everywhere
+	for (int i = 0; i < MSZ; ++i) {
+		for (int j = 0; j < MSZ; ++j) {
 			maze[i][j] = WALL;
 		}
 	}
-	InitRooms();
-	connectRooms();
+
+	// Randomly place walls in the maze
+	for (int i = 1; i < MSZ - 1; ++i) {
+		for (int j = 1; j < MSZ - 1; ++j) {
+			if (rand() % 5 == 0) { // Adjust the probability for walls
+				maze[i][j] = WALL;
+			}
+			else {
+				maze[i][j] = SPACE;
+			}
+		}
+	}
+
+	// Set up players and coins
 	drawPlayers();
-	
 }
 
 void drawPlayers() {
-	int pacmanX = rooms[0].get_cx(), pacmanY = rooms[0].get_cy();
-	maze[pacmanX][pacmanY] = PACMAN;
+	// Place Pacman in a random open space
+	int pacmanX, pacmanY;
+	do {
+		pacmanX = rand() % (MSZ - 2) + 1; // Random X within inner maze
+		pacmanY = rand() % (MSZ - 2) + 1; // Random Y within inner maze
+	} while (maze[pacmanY][pacmanX] != SPACE); // Ensure it's an open space
+	maze[pacmanY][pacmanX] = PACMAN;
 	pacman = new Cell(pacmanX, pacmanY, nullptr);
 
-	for (int i = 1; i <= NUM_OF_MONSTERS; i++) {
-		int y = rooms[i].get_cy();
-		int x = rooms[i].get_cx();
-		maze[x][y] = MONSTER;
-		monsters.push_back(new Cell(x, y, nullptr));
-
+	// Place monsters in random open spaces
+	for (int i = 0; i < NUM_OF_MONSTERS; ++i) {
+		int monsterX, monsterY;
+		do {
+			monsterX = rand() % (MSZ - 2) + 1; // Random X within inner maze
+			monsterY = rand() % (MSZ - 2) + 1; // Random Y within inner maze
+		} while (maze[monsterY][monsterX] != SPACE); // Ensure it's an open space
+		maze[monsterY][monsterX] = MONSTER;
+		monsters.push_back(new Cell(monsterX, monsterY, nullptr));
 	}
-	
-	int addition,r,coinX,coinY;
-	for (int i = 1; i <= NUM_OF_COINS; i++) {
-		addition = (rand() % 4) + 1;
-		if (i % 2 == 0) {
-			addition = addition * -1;
-		}
-		r = rand() % NUM_OF_ROOMS;
-		coinX = rooms[r].get_cx() + addition;
-		coinY = rooms[r].get_cy() + addition;
-		maze[coinX][coinY] = COIN;
+
+	// Place coins randomly in open spaces
+	//srand(time(0));
+	for (int i = 0; i < NUM_OF_COINS; ++i) {
+		int coinX, coinY;
+		do {
+			coinX = rand() % (MSZ - 2) + 1; // Random X within inner maze
+			coinY = rand() % (MSZ - 2) + 1; // Random Y within inner maze
+		} while (maze[coinY][coinX] != SPACE); // Ensure it's an open space
+		maze[coinY][coinX] = COIN;
 		coins.push_back(new Cell(coinX, coinY, nullptr));
 	}
 }
+
 
 void connectRooms() {
 	for (int i = 0; i < NUM_OF_ROOMS; i++) {
@@ -132,7 +153,7 @@ void connectRooms() {
 
 
 void runGame() {
-    pacmanMove();
+	pacmanMove();
 	Sleep(50);
 	if (monsterGo) {
 		monsterMove();
@@ -147,14 +168,35 @@ void monsterMove() {
 	int i = 0;
 	for (ptr = monsters.begin(); ptr < monsters.end(); ptr++)
 	{
-			monsterAStar(i);
-		
+		monsterAStar(i);
+
 		Cell* pc;
 		if (path_monster.size() >= 1)
 		{
 			pc = path_monster[path_monster.size() - 1];
 			int row = pc->get_x();
 			int col = pc->get_y();
+
+			// Check last direction to prevent immediate reverse movement
+			if (lastMonsterDirections[i] != -1 && lastMonsterDirections[i] == DIR_UP && row + 1 == (*ptr)->get_x() && col == (*ptr)->get_y())
+				continue; // Skip moving up
+			if (lastMonsterDirections[i] != -1 && lastMonsterDirections[i] == DIR_DOWN && row - 1 == (*ptr)->get_x() && col == (*ptr)->get_y())
+				continue; // Skip moving down
+			if (lastMonsterDirections[i] != -1 && lastMonsterDirections[i] == DIR_RIGHT && row == (*ptr)->get_x() && col + 1 == (*ptr)->get_y())
+				continue; // Skip moving right
+			if (lastMonsterDirections[i] != -1 && lastMonsterDirections[i] == DIR_LEFT && row == (*ptr)->get_x() && col - 1 == (*ptr)->get_y())
+				continue; // Skip moving left
+
+			// Update last movement direction
+			if (row > (*ptr)->get_x())
+				lastMonsterDirections[i] = DIR_UP;
+			else if (row < (*ptr)->get_x())
+				lastMonsterDirections[i] = DIR_DOWN;
+			else if (col > (*ptr)->get_y())
+				lastMonsterDirections[i] = DIR_RIGHT;
+			else if (col < (*ptr)->get_y())
+				lastMonsterDirections[i] = DIR_LEFT;
+
 			if (maze[row][col] == PACMAN)
 			{
 				run = false;
@@ -173,8 +215,6 @@ void monsterMove() {
 		}
 	}
 }
-
-
 
 
 
@@ -252,7 +292,7 @@ bool CheckNeighborMonster(Cell* pCurrent, int x, int y, int i)
 {
 	Cell* pc = new Cell(x, y, pCurrent);
 	monsterBlacks.push_back(pc);
-	if (DistanceMaze(x, y, monsters[i]->get_x(), monsters[i]->get_y()) >= 4 || maze[x][y]==PACMAN) // The algorithm is over
+	if (DistanceMaze(x, y, monsters[i]->get_x(), monsters[i]->get_y()) >= 4 || maze[x][y] == PACMAN) // The algorithm is over
 	{
 		RestorePathMonster(i);
 		return true;
@@ -305,16 +345,16 @@ double DistanceForPackman(int x, int y)
 	double dis_coin = DBL_MAX;
 	double dis_tmp = 0;
 	vector<Cell*>::iterator ptr;
-	
-		for (ptr = coins.begin(); ptr < coins.end(); ptr++)
-		{
-			dis_tmp = DistanceMaze(x, y, (*ptr)->get_x(), (*ptr)->get_y());
-			if (dis_tmp < dis_coin)
-				dis_coin = dis_tmp;
-		}
-		return abs(dis_coin);
-	
-	
+
+	for (ptr = coins.begin(); ptr < coins.end(); ptr++)
+	{
+		dis_tmp = DistanceMaze(x, y, (*ptr)->get_x(), (*ptr)->get_y());
+		if (dis_tmp < dis_coin)
+			dis_coin = dis_tmp;
+	}
+	return abs(dis_coin);
+
+
 }
 
 
@@ -338,17 +378,37 @@ void pacmanMove()
 	}
 	else if (run)
 	{
-		
-	    BFSIteration();
+		BFSIteration();
 		Cell* pc;
 		pc = path[path.size() - 1];
 		int row = pc->get_x();
 		int col = pc->get_y();
+
+		// Check last direction to prevent immediate reverse movement
+		if (lastPacmanDirection != -1 && lastPacmanDirection == DIR_UP && row + 1 == pacman->get_x() && col == pacman->get_y())
+			return; // Skip moving up
+		if (lastPacmanDirection != -1 && lastPacmanDirection == DIR_DOWN && row - 1 == pacman->get_x() && col == pacman->get_y())
+			return; // Skip moving down
+		if (lastPacmanDirection != -1 && lastPacmanDirection == DIR_RIGHT && row == pacman->get_x() && col + 1 == pacman->get_y())
+			return; // Skip moving right
+		if (lastPacmanDirection != -1 && lastPacmanDirection == DIR_LEFT && row == pacman->get_x() && col - 1 == pacman->get_y())
+			return; // Skip moving left
+
+		// Update last movement direction
+		if (row > pacman->get_x())
+			lastPacmanDirection = DIR_UP;
+		else if (row < pacman->get_x())
+			lastPacmanDirection = DIR_DOWN;
+		else if (col > pacman->get_y())
+			lastPacmanDirection = DIR_RIGHT;
+		else if (col < pacman->get_y())
+			lastPacmanDirection = DIR_LEFT;
+
 		if (maze[row][col] == COIN)
 		{
 			coinsRemained--;
 			EraseCoin(row, col);
-			printf("Pacman ate %d coins. %d left\n", (NUM_OF_COINS - coinsRemained) ,coinsRemained);
+			printf("Pacman ate %d coins. %d left\n", (NUM_OF_COINS - coinsRemained), coinsRemained);
 		}
 		maze[pacman->get_x()][pacman->get_y()] = SPACE;
 		pacman->set_y_val(col);
@@ -376,7 +436,6 @@ void BFSIteration()
 		}
 		else
 		{
-			
 			pCurrent = *grays2.begin();
 			int row, col;
 			// Grays is not empty. Get the first one and remove it from grays
@@ -409,7 +468,7 @@ bool PacmanCheckNeighbor(Cell* pCurrent, int row, int col)
 {
 	Cell* pc = new Cell(row, col, pCurrent);
 	grays2.push_back(pc);
-	if (DistanceMaze(row, col, pacman->get_x(), pacman->get_y()) >= MONSTER_DEPTH || maze[row][col]== COIN)
+	if (DistanceMaze(row, col, pacman->get_x(), pacman->get_y()) >= MONSTER_DEPTH || maze[row][col] == COIN)
 	{
 		RestorePath();
 		return true;
@@ -465,7 +524,7 @@ void EraseCoin(int x, int y)
 	vector<Cell*>::iterator ptr;
 	for (ptr = coins.begin(); ptr < coins.end(); ptr++)
 	{
-		if ((*ptr)->get_x() == x && (*ptr)->get_y()== y)
+		if ((*ptr)->get_x() == x && (*ptr)->get_y() == y)
 		{
 			coins.erase(ptr);
 			return;
@@ -690,7 +749,7 @@ void DrawMaze()
 				glColor3d(0.8, 0.5, 0.2); // YELLOW
 				break;
 			}
-			
+
 			glBegin(GL_POLYGON);
 			glVertex2d(j, i);
 			glVertex2d(j, i + 1);
@@ -726,7 +785,7 @@ void menu(int choice)
 		}
 		run = true;
 	}
-	
+
 }
 
 void main(int argc, char* argv[])

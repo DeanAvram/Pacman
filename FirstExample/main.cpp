@@ -1,6 +1,5 @@
 #include "GLUT.h"
 #include "CompareCells.h"
-#include "Room.h"
 #include <stdlib.h>
 #include "Cell.h"
 #include "State.h"
@@ -22,7 +21,6 @@ const int DIR_RIGHT = 2;
 const int DIR_LEFT = 3;
 
 int maze[MSZ][MSZ] = { 0 };
-Room rooms[NUM_OF_ROOMS];
 vector <Cell> grays;
 vector <Cell*> grays2;
 vector <Cell> blacks;
@@ -47,13 +45,8 @@ vector<int> lastMonsterDirections(NUM_OF_MONSTERS, -1); // Initialize for each m
 
 
 void InitMaze();
-void InitRooms();
 void drawPlayers();
-bool isInvadingRoom(int r, int c, int h, int w);
-void connectRooms();
-void RoomAstar(Room r1, Room r2);
 void drawPath(Cell* tmp);
-void RoomCheckNeighbor(int row, int col, Cell* p, int xt, int yt, vector <Cell>& grays, vector <Cell>& blacks);
 void pacmanMove();
 void EraseCoin(int x, int y);
 void BFSIteration();
@@ -140,16 +133,6 @@ void drawPlayers() {
 }
 
 
-void connectRooms() {
-	for (int i = 0; i < NUM_OF_ROOMS; i++) {
-		for (int j = 0; j < NUM_OF_ROOMS; j++) {
-			if (i != j) {
-				RoomAstar(rooms[i], rooms[j]);
-			}
-		}
-		printf("room %d connected \n", i);
-	}
-}
 
 
 void runGame() {
@@ -533,133 +516,8 @@ void EraseCoin(int x, int y)
 }
 
 
-void RoomAstar(Room r1, Room r2) {
-	// Initialize containers for cells being explored and explored cells
-	vector<Cell> grays;
-	vector<Cell> blacks;
-
-	// Initialize variables for target room coordinates
-	int xTarget = r2.get_cx();
-	int yTarget = r2.get_cy();
-
-	// Create the initial cell representing the starting room
-	Cell first(r1.get_cx(), r1.get_cy(), nullptr, xTarget, yTarget, 0);
-
-	// Push the initial cell into the priority queue and mark it as gray
-	pq.push(first);
-	grays.push_back(first);
-
-	// Iterator for gray cells
-	vector<Cell>::iterator it_gray;
-
-	// Flag to track whether A* algorithm is running
-	bool AStar_is_running = true;
-
-	// Main A* loop
-	while (AStar_is_running) {
-		// Check if the priority queue is empty
-		if (pq.empty()) {
-			// If the queue is empty, terminate the algorithm
-			AStar_is_running = false;
-			return;
-		}
-		else {
-			// Retrieve the current cell from the priority queue
-			Cell* pcurrent = new Cell(pq.top());
-			pq.pop();
-
-			// Find the current cell in the gray list
-			it_gray = find(grays.begin(), grays.end(), *pcurrent);
-
-			// Check if the current cell is not in the gray list
-			if (it_gray == grays.end()) {
-				// If not found in the gray list, print an error message and terminate the algorithm
-				printf("Current cell not found in gray list.\n");
-				AStar_is_running = false;
-				return;
-			}
-
-			// Remove the current cell from the gray list and add it to the black list
-			grays.erase(it_gray);
-			blacks.push_back(*pcurrent);
-
-			// Get the coordinates of the current cell
-			int r = pcurrent->get_x();
-			int c = pcurrent->get_y();
-
-			// Explore neighboring cells
-
-			// Up
-			if (AStar_is_running && r < MSZ) {
-				RoomCheckNeighbor(r + 1, c, pcurrent, xTarget, yTarget, grays, blacks);
-			}
-
-			// Down
-			if (AStar_is_running && r > 0) {
-				RoomCheckNeighbor(r - 1, c, pcurrent, xTarget, yTarget, grays, blacks);
-			}
-
-			// Left
-			if (AStar_is_running && c > 0) {
-				RoomCheckNeighbor(r, c - 1, pcurrent, xTarget, yTarget, grays, blacks);
-			}
-
-			// Right
-			if (AStar_is_running && c < MSZ) {
-				RoomCheckNeighbor(r, c + 1, pcurrent, xTarget, yTarget, grays, blacks);
-			}
-		}
-	}
-}
 
 
-
-void RoomCheckNeighbor(int row, int col, Cell* p, int xt, int yt, vector <Cell>& grays, vector <Cell>& blacks) {
-	// Define the cost of moving to the neighboring cell
-	double cost;
-
-	// Check if the neighboring cell is open space or an obstacle
-	if (maze[row][col] == SPACE) {
-		// If it's open space, set the cost to 1
-		cost = 1.0;
-	}
-	else {
-		// If it's an obstacle, set the cost to a higher value
-		cost = ROOM_ASTAR_COST;
-	}
-
-	// Check if the neighboring cell is the target cell
-	if (xt == row && yt == col) {
-		// If it is, terminate the A* algorithm and draw the path
-		AStar_is_running = false;
-		while (!pq.empty()) {
-			pq.pop();
-		}
-		drawPath(p);
-		return;
-	}
-	else {
-		// If it's not the target cell, proceed with evaluating the cell
-		Cell* ctmp = new Cell(row, col, p, xt, yt, p->get_g_val() + cost);
-		vector<Cell>::iterator it_gray = find(grays.begin(), grays.end(), *ctmp);
-		vector<Cell>::iterator it_black = find(blacks.begin(), blacks.end(), *ctmp);
-
-		// Check if the neighboring cell is unexplored (not in grays or blacks)
-		if (it_gray == grays.end() && it_black == blacks.end()) {
-			// If it's unexplored, add it to the priority queue and mark it as gray
-			pq.push(*ctmp);
-			grays.push_back(*ctmp);
-		}
-		else if (it_gray != grays.end()) {
-			// If it's gray, check if the new path to it is better
-			if (ctmp->get_g_val() < it_gray->get_g_val()) {
-				// If the new path is better, update its cost and adjust the priority queue
-				*it_gray = *ctmp;
-				updatePriorityQueue(*ctmp);
-			}
-		}
-	}
-}
 
 void updatePriorityQueue(Cell& cell) {
 	// Temporary vector to hold cells from the priority queue
@@ -695,33 +553,6 @@ void drawPath(Cell* tmp)
 	}
 }
 
-void InitRooms() {
-	int minimum_width = 10, minimum_height = 10, x, y, w, h, i;
-
-	for (i = 0; i < NUM_OF_ROOMS; i++)
-	{
-		do
-		{
-			x = 7 + minimum_height / 2 + rand() % (MSZ - minimum_height - 16);
-			y = 7 + minimum_width / 2 + rand() % (MSZ - minimum_width - 16);
-			w = minimum_width - 2 + rand() % 20;
-			h = minimum_height - 2 + rand() % 20;
-		} while (isInvadingRoom(x, y, h, w));
-		rooms[i] = *(new Room(x, y, h, w));
-		rooms[i].fillRoom(maze, SPACE);
-	}
-}
-
-
-bool isInvadingRoom(int r, int c, int h, int w)
-{
-	for (int i = r - h / 2 - 1; i <= r + h / 2 + 1; i++)
-		for (int j = c - w / 2 - 1; j <= c + w / 2 + 1; j++)
-			if (maze[i][j] == SPACE)
-				return true;
-
-	return false;
-}
 
 void DrawMaze()
 {

@@ -11,3 +11,7 @@ const int NUM_OF_COINS= 3;
 const int DANGER_DIST = 7;
 const int ROOM_ASTAR_COST = 2.7;
 const int MONSTER_DEPTH = 8;
+const int DIR_UP = 0;
+const int DIR_DOWN = 1;
+const int DIR_RIGHT = 2;
+const int DIR_LEFT = 3;

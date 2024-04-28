@@ -15,11 +15,6 @@
 using std::vector;
 using std::priority_queue;
 
-const int DIR_UP = 0;
-const int DIR_DOWN = 1;
-const int DIR_RIGHT = 2;
-const int DIR_LEFT = 3;
-
 int maze[MSZ][MSZ] = { 0 };
 vector <Cell> grays;
 vector <Cell*> grays2;
@@ -104,8 +99,9 @@ void drawPlayers() {
 	do {
 		pacmanX = rand() % (MSZ - 2) + 1; // Random X within inner maze
 		pacmanY = rand() % (MSZ - 2) + 1; // Random Y within inner maze
-	} while (maze[pacmanY][pacmanX] != SPACE); // Ensure it's an open space
-	maze[pacmanY][pacmanX] = PACMAN;
+	} while (maze[pacmanX][pacmanY] != SPACE); // Ensure it's an open space
+	maze[pacmanX][pacmanY] = PACMAN;
+
 	pacman = new Cell(pacmanX, pacmanY, nullptr);
 
 	// Place monsters in random open spaces
@@ -114,8 +110,8 @@ void drawPlayers() {
 		do {
 			monsterX = rand() % (MSZ - 2) + 1; // Random X within inner maze
 			monsterY = rand() % (MSZ - 2) + 1; // Random Y within inner maze
-		} while (maze[monsterY][monsterX] != SPACE); // Ensure it's an open space
-		maze[monsterY][monsterX] = MONSTER;
+		} while (maze[monsterX][monsterY] != SPACE); // Ensure it's an open space
+		maze[monsterX][monsterY] = MONSTER;
 		monsters.push_back(new Cell(monsterX, monsterY, nullptr));
 	}
 
@@ -127,7 +123,7 @@ void drawPlayers() {
 			coinX = rand() % (MSZ - 2) + 1; // Random X within inner maze
 			coinY = rand() % (MSZ - 2) + 1; // Random Y within inner maze
 		} while (maze[coinY][coinX] != SPACE); // Ensure it's an open space
-		maze[coinY][coinX] = COIN;
+		maze[coinX][coinY] = COIN;
 		coins.push_back(new Cell(coinX, coinY, nullptr));
 	}
 }
